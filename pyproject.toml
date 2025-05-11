@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Include the source code and bricks in the wheel
+[tool.hatch.build.targets.wheel]
+packages = ["src/dla_fl"]
+
+[project]
+name = "dynamic-layer-adaptive-fl-sim"
+version = "0.0.0"
+description = "Simulation framework for Dynamic Layer‑Adaptive Federated Learning (DLA‑AI)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Achyut Boggaram" }]
+dependencies = [
+  "numpy",
+  "pandas>=2.2.3",
+  "PyYAML",
+  "torch>=2.2,<3.0",
+  "torchvision>=0.22.0",
+]
+
+
+[project.optional-dependencies]
+test = [
+  "pytest>=7.0",
+]
+
+[project.scripts]
+dla-fl-sim = "run_sim:main"

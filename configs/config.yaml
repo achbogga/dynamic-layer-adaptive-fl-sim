@@ -1,0 +1,21 @@
+simulation:
+  rounds: 10
+
+model:
+  layers: [2, 2, 1]
+
+scheduler:
+  idle_threshold: 0.3
+  devices:
+    device_A:
+      idle_fraction: 0.5
+    device_B:
+      idle_fraction: 0.2
+    device_C:
+      idle_fraction: 0.8
+
+fog:
+  region: us-central
+
+cloud:
+  endpoint: https://cloud.example.com

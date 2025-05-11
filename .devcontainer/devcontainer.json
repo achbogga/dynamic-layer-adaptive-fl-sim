@@ -1,0 +1,72 @@
+{
+    "name": "DLA-Fl Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "postCreateCommand": "uv sync --no-install-project && uv sync --locked",
+    "containerEnv": {
+        // Devcontainer Features can only set static environmet variables, not read from localEnv
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                // Base extensions to support project development
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "nexmoe.monitor-pro",
+                // QoL extensions for linting, and formatting
+                "Trunk.io",
+                "charliermarsh.ruff",
+                "njpwerner.autodocstring",
+                "bierner.github-markdown-preview",
+                "tamasfe.even-better-toml",
+                "Gruntfuggly.todo-tree",
+                "christian-kohler.path-intellisense",
+                "rodolphebarbanneau.python-docstring-highlighter",
+                "ryu1kn.partial-diff"
+            ],
+            "settings": {
+                // Linting and formatting
+                "editor.rulers": [120],
+                "editor.formatOnSave": true,
+                "autoDocstring.docstringFormat": "google-notypes",
+                "files.insertFinalNewline": true,
+                "files.trimFinalNewlines": true,
+                "files.trimTrailingWhitespace": true,
+                // Python testing and interpreter settings
+                "jupyter.debugJustMyCode": false,
+                // QoL
+                "todo-tree.tree.scanMode": "workspace only",
+                "githubIssues.ignoreUserCompletionTrigger": [], // microsoft/vscode-pull-request-github#6469
+                "terminal.integrated.scrollback": 5000,
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "terminal.integrated.defaultProfile.osx": "bash",
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "bash",
+                        "args": ["-l"],
+                        "icon": "terminal-bash"
+                    },
+                    "zsh": {
+                        "path": "zsh",
+                        "args": ["-l"]
+                    }
+                },
+                "terminal.integrated.profiles.osx": {
+                    "bash": {
+                        "path": "bash",
+                        "args": ["-l"],
+                        "icon": "terminal-bash"
+                    },
+                    "zsh": {
+                        "path": "zsh",
+                        "args": ["-l"]
+                    }
+                }
+            }
+        }
+    }
+}
