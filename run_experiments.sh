@@ -28,4 +28,7 @@ for cfg in "${configs[@]}"; do
   uv run run_sim.py -c "configs/$cfg" -o "$out_dir"
 done
 
+echo -e "\n>>> Real-data experiment: MNIST"
+uv run src/dla_fl/end_to_end_mnist.py
+
 echo -e "\nAll experiments complete. Results are under $OUT_BASE/."

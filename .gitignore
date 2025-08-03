@@ -177,3 +177,5 @@ cython_debug/
 results/
 # logs
 logs/
+# datasets
+data/
