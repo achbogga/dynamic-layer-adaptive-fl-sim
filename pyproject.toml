@@ -20,6 +20,7 @@ dependencies = [
   "PyYAML",
   "torch>=2.2,<3.0",
   "torchvision>=0.22.0",
+  "matplotlib",
 ]
 
 

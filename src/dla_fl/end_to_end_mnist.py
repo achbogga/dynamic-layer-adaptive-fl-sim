@@ -1,4 +1,3 @@
-import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -52,6 +51,7 @@ def fedavg(num_rounds=5, num_devices=3, lr=0.01, epochs=1):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     loaders, test_loader = get_data_loaders(num_devices)
     global_model = SimpleCNN().to(device)
+    accs = []
 
     for r in range(num_rounds):
         local_states = []
@@ -74,7 +74,9 @@ def fedavg(num_rounds=5, num_devices=3, lr=0.01, epochs=1):
             new_state[k] = torch.stack([s[k] for s in local_states], 0).mean(0)
         global_model.load_state_dict(new_state)
         acc = evaluate(global_model, test_loader, device)
+        accs.append(acc)
         print(f"FedAvg Round {r+1}: Accuracy={acc:.4f}")
+    return accs
 
 def average_state_dict(dicts):
     avg = {}
@@ -84,7 +86,9 @@ def average_state_dict(dicts):
 
 def dla_ai(num_rounds=5, num_devices=3, lr=0.01, epochs=1):
     """Simplified DLA-AI training on MNIST using layer partitions.
-    Each device trains either conv or fc partition; updates are averaged per partition.
+    Each device trains both ``conv`` and ``fc`` segments every round in a
+    deterministic order (``conv`` then ``fc``). Updates for each segment are
+    averaged separately before updating the global model.
     """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     loaders, test_loader = get_data_loaders(num_devices)
@@ -92,36 +96,44 @@ def dla_ai(num_rounds=5, num_devices=3, lr=0.01, epochs=1):
 
     conv_state = global_model.conv.state_dict()
     fc_state = global_model.fc.state_dict()
+    accs = []
 
     for r in range(num_rounds):
         conv_updates, fc_updates = [], []
         for ld in loaders.values():
-            m = SimpleCNN().to(device)
-            m.conv.load_state_dict(conv_state)
-            m.fc.load_state_dict(fc_state)
-            opt = optim.SGD(m.parameters(), lr=lr)
-
-            part = random.choice(['conv', 'fc'])
-            if part == 'conv':
-                for p in m.fc.parameters():
-                    p.requires_grad = False
-            else:
-                for p in m.conv.parameters():
-                    p.requires_grad = False
-
-            m.train()
+            # Train convolutional layers
+            for_part = SimpleCNN().to(device)
+            for_part.conv.load_state_dict(conv_state)
+            for_part.fc.load_state_dict(fc_state)
+            for p in for_part.fc.parameters():
+                p.requires_grad = False
+            opt = optim.SGD([p for p in for_part.parameters() if p.requires_grad], lr=lr)
+            for_part.train()
             for _ in range(epochs):
                 for x, y in ld:
                     x, y = x.to(device), y.to(device)
                     opt.zero_grad()
-                    loss = nn.functional.cross_entropy(m(x), y)
+                    loss = nn.functional.cross_entropy(for_part(x), y)
                     loss.backward()
                     opt.step()
+            conv_updates.append({k: v.detach().cpu() for k, v in for_part.conv.state_dict().items()})
 
-            if part == 'conv':
-                conv_updates.append({k: v.detach().cpu() for k, v in m.conv.state_dict().items()})
-            else:
-                fc_updates.append({k: v.detach().cpu() for k, v in m.fc.state_dict().items()})
+            # Train fully connected layers
+            for_part = SimpleCNN().to(device)
+            for_part.conv.load_state_dict(conv_state)
+            for_part.fc.load_state_dict(fc_state)
+            for p in for_part.conv.parameters():
+                p.requires_grad = False
+            opt = optim.SGD([p for p in for_part.parameters() if p.requires_grad], lr=lr)
+            for_part.train()
+            for _ in range(epochs):
+                for x, y in ld:
+                    x, y = x.to(device), y.to(device)
+                    opt.zero_grad()
+                    loss = nn.functional.cross_entropy(for_part(x), y)
+                    loss.backward()
+                    opt.step()
+            fc_updates.append({k: v.detach().cpu() for k, v in for_part.fc.state_dict().items()})
 
         if conv_updates:
             conv_state = average_state_dict(conv_updates)
@@ -131,7 +143,9 @@ def dla_ai(num_rounds=5, num_devices=3, lr=0.01, epochs=1):
         global_model.conv.load_state_dict(conv_state)
         global_model.fc.load_state_dict(fc_state)
         acc = evaluate(global_model, test_loader, device)
+        accs.append(acc)
         print(f"DLA-AI Round {r+1}: Accuracy={acc:.4f}")
+    return accs
 
 if __name__ == '__main__':
     print("=== FedAvg on MNIST ===")
